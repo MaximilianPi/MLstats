@@ -10,14 +10,6 @@
 
 
 
-x = matrix(runif(1000), nrow = 100, ncol = 10)
-w = runif(10,-1,1)
-y = x %*% w + 2 + rnorm(100,0,0.5)
-data = data.frame(x, y=y)
-parameter = NULL
-formula = y~.
-cv = NULL
-
 lmML = function(formula, data = NULL, subset, na.action, method = "ann", scale, parameter = NULL, cv = NULL){
 
   if (!inherits(formula, "formula")) stop("method is only for formula objects")
@@ -27,7 +19,9 @@ lmML = function(formula, data = NULL, subset, na.action, method = "ann", scale, 
   # not elegant...change later
   # ......................... #
   y = model.response(model.frame(formula, data))
+
   x = model.matrix(formula, data)
+
   x = x[,!colnames(x) %in% "(Intercept)"]
   # ......................... #
 
@@ -35,7 +29,24 @@ lmML = function(formula, data = NULL, subset, na.action, method = "ann", scale, 
 
   model = create_model_object(method, parameter)
 
-  model_fit = model_fit(model, cv, data_prepared)
+  model_fitted = model_fit(model, cv, data_prepared)
+
+  predictions = predict(model_fitted, data_prepared$x)
+
+  residuals = data_prepared$y - predictions
+
+  output = list()
+
+  output$predictions = predictions
+
+  output$residuals = residuals
+
+  output$deviance = -2*sum(dnorm(data_prepared$y, predictions, sd = model_fitted$lm$sigma, log = T))
+
+  output$model = model_fitted$lm
+
+  class(output) = paste0("MLstats.", class(model_fitted))
+
 
   #importance = get_importance(model_fit)
 
@@ -78,16 +89,6 @@ get_default_parameter = function(method = "ann") {
 }
 
 
-#' Model predict function for the different models
-#'
-#' @author Maximilian Pichler
-#' @param model model type
-#' @param data predict for data
-#' @export
-predict = function(model, data){
-  UseMethod("predict", model)
-}
-
 #' Model predict function for lm_ann
 #'
 #' @author Maximilian Pichler
@@ -96,6 +97,16 @@ predict = function(model, data){
 #' @export
 predict.lm_ann = function(model, data){
   return(model$lm$predict(data))
+}
+
+#' Model predict function for MLstats.lm_ann
+#'
+#' @author Maximilian Pichler
+#' @param model model type
+#' @param data predict for data
+#' @export
+predict.MLstats.lm_ann = function(model, data){
+  return(model$model$predict(data))
 }
 
 #' Model fit function for the different models

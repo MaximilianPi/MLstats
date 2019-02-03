@@ -2,7 +2,10 @@
 
 S3method(model_fit,lm_ann)
 S3method(model_fit,lm_rf)
+S3method(predict,MLstats.lm_ann)
+S3method(predict,lm_ann)
 export(ANN)
+export(ANN_lm)
 export(install_tensorflow)
 export(lmML)
 export(model_fit)

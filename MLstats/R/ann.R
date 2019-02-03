@@ -121,7 +121,7 @@ ANN = R6::R6Class("ANN",
    },
 
    predict = function(newdata = NULL){
-     require(keras)
+     library(keras)
      if(is.null(newdata)) newdata = self$data$x
      predict(self$model, newdata)
    },
@@ -210,8 +210,9 @@ ANN_lm = R6::R6Class("ANN_lm",
       if(self$build()){
         suppressMessages({self$model$layers[[length(self$model$layers)]]$add_weight(name = 'sigma',
                                                                   shape = list(),
-                                                                  initializer = initializer_constant(0.5),
+                                                                  initializer = keras::initializer_constant(0.5),
                                                                   trainable = TRUE)
+        self$build_output("linear")
         })
       }
     },
@@ -240,12 +241,3 @@ ANN_lm = R6::R6Class("ANN_lm",
 
 
 ))
-
-# m = ANN_lm$new(data = data)
-#
-# m$build_lm()
-# m$compile()
-# m$train()
-# m$model
-#
-# m$reset_all()
