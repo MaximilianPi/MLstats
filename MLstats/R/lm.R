@@ -16,7 +16,7 @@
 #'@importFrom stats dnorm
 #'@export
 
-# TO DO: implement cv + subset + na.action
+# TO DO: implement cv + subset + na.action +examples+description
 
 lmML = function(formula, data = NULL, subset = NULL, na.action = NULL, method = "ann", scale = FALSE, parameter = NULL, cv = NULL){
 
@@ -134,6 +134,14 @@ predict.lm_ann = function(model, data){
 }
 
 
+#' generics test
+#' @param model model..
+#' @param data data...
+#' @export
+
+predict.MLstats = function(model,data){
+  UseMethod("predict.MLstats", model)
+}
 
 #' Model predict function for MLstats.lm_ann
 #'
