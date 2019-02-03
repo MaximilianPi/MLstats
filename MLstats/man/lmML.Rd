@@ -4,8 +4,8 @@
 \alias{lmML}
 \title{Fit a linear regression with a normal distributed error}
 \usage{
-lmML(formula, data = NULL, subset, na.action, method = "ann", scale,
-  parameter = NULL, cv = NULL)
+lmML(formula, data = NULL, subset = NULL, na.action, method = "ann",
+  scale = FALSE, parameter = NULL, cv = NULL)
 }
 \arguments{
 \item{formula}{an object of class formula}

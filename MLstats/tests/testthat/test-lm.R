@@ -8,7 +8,7 @@ skip_if_no_tensorflow <- function() {
 x = matrix(runif(1000), nrow = 100, ncol = 10)
 w = runif(10,-1,1)
 y = x %*% w + 2 + rnorm(100,0,0.5)
-data = list(x=x, y=y)
+data = data.frame(x, y=y)
 # parameter = NULL
 
 
@@ -20,8 +20,13 @@ testthat::test_that("lm functionality",{
   testthat::expect_error(lmML(y~., data = data, parameter = list(epochs = "hi"), method = "ann"))
 
   skip_if_no_tensorflow()
-  testthat::expect_error(lmML(y~., data = data, parameter = list(epochs = 1L, architecture = 1L), method = "ann"))
-
-
-
+  testthat::expect_error(lmML(y~., data = data, parameter = list(epochs = 1L, architecture = 1L), method = "ann"), NA)
+  testthat::expect_error({
+    fit = lmML(y~., data = data, parameter = list(epochs = 1L, architecture = 1L), method = "ann")
+    p = predict(fit,data)
+    }, NA)
+  testthat::expect_error({
+    fit = lmML(y~., data = data, parameter = list(epochs = 1L, architecture = 1L), method = "ann")
+    p = predict(fit,data)
+  }, NA)
 })

@@ -46,7 +46,7 @@ testthat::test_that("ann_lm functionality", {
     m$train()
     m$reset_fit()
     m$predict()
-  })
+  }, NA)
 
   testthat::expect_error({
     m = ANN_lm$new(data= data, epochs = 1L, architecture = 1L)

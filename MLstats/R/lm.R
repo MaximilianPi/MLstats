@@ -15,7 +15,8 @@ lmML = function(formula, data = NULL, subset = NULL, na.action, method = "ann", 
   if(!inherits(formula, "formula")) stop("method is only for formula objects")
   if(method != "ann") stop("At the moment, only method = 'ann' is supported")
   if(is.null(parameter)) parameter = get_default_parameter(method = method)
-  if(!check_parameter(parameter, method)) stop("Unkown parameters in parameter list!")
+  parameter = check_parameter(parameter, method)
+  if(is.logical(parameter) && !parameter) stop("Unkown parameters in parameter list!")
 
   # not elegant...change later
   # ......................... #
@@ -46,8 +47,11 @@ lmML = function(formula, data = NULL, subset = NULL, na.action, method = "ann", 
 
   output$model = model_fitted$lm
 
+  output$formula = formula
+
   class(output) = paste0("MLstats.", class(model_fitted))
 
+  return(output)
 
   #importance = get_importance(model_fit)
 
@@ -78,9 +82,12 @@ create_model_object = function(method, parameter){
 #' @param method method, only ann supported
 
 check_parameter = function(parameter, method){
-  get_default = names(get_default_parameter())
-  if(!any(names(parameter) %in% get_default)) return(FALSE)
-  else return(TRUE)
+  get_default = get_default_parameter()
+  if(!any(names(parameter) %in% names(get_default))) return(FALSE)
+  else {
+    for(p in names(parameter)) get_default[[p]] = parameter[[p]]
+    return(get_default)
+  }
 }
 
 
@@ -117,6 +124,8 @@ predict.lm_ann = function(model, data){
   return(model$lm$predict(data))
 }
 
+
+
 #' Model predict function for MLstats.lm_ann
 #'
 #' @author Maximilian Pichler
@@ -124,7 +133,14 @@ predict.lm_ann = function(model, data){
 #' @param data predict for data
 #' @export
 predict.MLstats.lm_ann = function(model, data){
-  return(model$model$predict(data))
+
+  y = model.response(model.frame(model$formula, data))
+
+  x = model.matrix(model$formula, data)
+
+  x = x[,!colnames(x) %in% "(Intercept)"]
+
+  return(model$model$predict(as.matrix(x)))
 }
 
 #' Model fit function for the different models
