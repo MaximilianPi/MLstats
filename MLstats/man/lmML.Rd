@@ -4,8 +4,8 @@
 \alias{lmML}
 \title{Fit a linear regression with a normal distributed error}
 \usage{
-lmML(formula, data = NULL, subset = NULL, na.action, method = "ann",
-  scale = FALSE, parameter = NULL, cv = NULL)
+lmML(formula, data = NULL, subset = NULL, na.action = NULL,
+  method = "ann", scale = FALSE, parameter = NULL, cv = NULL)
 }
 \arguments{
 \item{formula}{an object of class formula}
@@ -14,7 +14,15 @@ lmML(formula, data = NULL, subset = NULL, na.action, method = "ann",
 
 \item{subset}{indicies on which model is fitted}
 
+\item{na.action}{how to handle nas}
+
 \item{method}{support methods are random forest, deep neural networks}
+
+\item{scale}{how to handle unscales values}
+
+\item{parameter}{list of parameter for method}
+
+\item{cv}{cross validation strategy}
 }
 \description{
 Fit a linear regression with a normal distributed error

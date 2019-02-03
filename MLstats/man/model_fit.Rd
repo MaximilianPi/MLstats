@@ -10,6 +10,8 @@ model_fit(model, cv, data)
 \item{model}{model type}
 
 \item{cv}{type}
+
+\item{data}{data for fitting}
 }
 \description{
 Model fit function for the different models

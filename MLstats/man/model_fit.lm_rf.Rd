@@ -10,6 +10,8 @@
 \item{model}{model type}
 
 \item{cv}{cv type}
+
+\item{data}{data ...}
 }
 \description{
 Model fit lm for ANN
