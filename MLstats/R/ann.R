@@ -133,6 +133,7 @@ ANN = R6::R6Class("ANN",
    reset_fit = function(){
      self$k$clear_session()
      self$model = keras::keras_model_sequential()
+     private$built = FALSE
      self$build()
      self$compile()
    },
@@ -140,6 +141,7 @@ ANN = R6::R6Class("ANN",
    reset_all = function(){
      self$k$clear_session()
      self$model = keras::keras_model_sequential()
+     private$built = FALSE
    }
 
 
@@ -203,7 +205,11 @@ ANN_lm = R6::R6Class("ANN_lm",
       super$initialize(...)
       self$tf = reticulate::import("tensorflow")
       self$dist = reticulate::import("tensorflow_probability")$distributions
-      self$eps = self$tf$constant(.Machine$double.eps)
+      self$init_eps()
+    },
+
+    init_eps = function(){
+       self$eps = self$tf$constant(.Machine$double.eps)
     },
 
     build_lm = function(){
@@ -212,6 +218,7 @@ ANN_lm = R6::R6Class("ANN_lm",
                                                                   shape = list(),
                                                                   initializer = keras::initializer_constant(0.5),
                                                                   trainable = TRUE)
+        self$eps = self$tf$constant(.Machine$double.eps)
         self$build_output("linear")
         })
       }
@@ -237,7 +244,16 @@ ANN_lm = R6::R6Class("ANN_lm",
 
     update_sigma = function() {
       self$sigma = self$k$get_value(self$tf$get_default_graph()$get_tensor_by_name("sigma:0"))
+    },
+
+    reset_fit = function(){
+       self$k$clear_session()
+       self$model = keras::keras_model_sequential()
+       private$built = FALSE
+       self$build_lm()
+       self$compile()
     }
+
 
 
 ))

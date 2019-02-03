@@ -8,13 +8,14 @@
 #'
 #'@export
 
+# TO DO: implement cv + subset + na.action
 
+lmML = function(formula, data = NULL, subset = NULL, na.action, method = "ann", scale = FALSE, parameter = NULL, cv = NULL){
 
-lmML = function(formula, data = NULL, subset, na.action, method = "ann", scale, parameter = NULL, cv = NULL){
-
-  if (!inherits(formula, "formula")) stop("method is only for formula objects")
-
+  if(!inherits(formula, "formula")) stop("method is only for formula objects")
+  if(method != "ann") stop("At the moment, only method = 'ann' is supported")
   if(is.null(parameter)) parameter = get_default_parameter(method = method)
+  if(!check_parameter(parameter, method)) stop("Unkown parameters in parameter list!")
 
   # not elegant...change later
   # ......................... #
@@ -70,20 +71,37 @@ create_model_object = function(method, parameter){
 }
 
 
+
+#' check parameter list
+#' @author Maximilian Pichler
+#' @param parameter parameter list to check
+#' @param method method, only ann supported
+
+check_parameter = function(parameter, method){
+  get_default = names(get_default_parameter())
+  if(!any(names(parameter) %in% get_default)) return(FALSE)
+  else return(TRUE)
+}
+
+
+
+
+
 #' Get default parameter function, internal
 #' @author MaximilianPi
 #' @param method pars for method, default ann
 get_default_parameter = function(method = "ann") {
   if(method == "ann"){
     out = list()
-    out$architecture = c(20L, 20L, 20L)
+    out$architecture = c(10,10)
     out$lr = 0.001
     out$regularization = "batch_normalization"
     out$activation_function = "relu"
     out$batch = 25L
-    out$epochs = 50L
+    out$epochs = 100L
     out$learning_rate = 0.001
     out$bias = TRUE
+    out$dropout_rate = 1.
   }
   return(out)
 }

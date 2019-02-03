@@ -12,6 +12,71 @@ data = list(x=x, y=y)
 testthat::test_that("ann_lm functionality", {
   skip_if_no_tensorflow()
 
+  testthat::expect_error({
+    m = ANN_lm$new(data= data)
+  }, NA)
+
+  testthat::expect_error({
+    m = ANN_lm$new(data= data, epochs = 1L, architecture = 1L)
+    m$build_lm()
+    m$compile()
+    m$train()
+  }, NA)
+
+  testthat::expect_error({
+    m = ANN_lm$new(data= data, epochs = 1L, architecture = 1L)
+    m$build_lm()
+    m$compile()
+    m$train()
+    m$predict()
+  }, NA)
+
+  testthat::expect_error({
+    m = ANN_lm$new(data= data, epochs = 1L, architecture = 1L)
+    m$build_lm()
+    m$compile()
+    m$train()
+    m$predict()
+  }, NA)
+
+  testthat::expect_error({
+    m = ANN_lm$new(data= data, epochs = 1L, architecture = 1L)
+    m$build_lm()
+    m$compile()
+    m$train()
+    m$reset_fit()
+    m$predict()
+  })
+
+  testthat::expect_error({
+    m = ANN_lm$new(data= data, epochs = 1L, architecture = 1L)
+    m$build_lm()
+    m$compile()
+    m$train()
+    m$reset_fit()
+    m$train()
+    m$predict()
+  }, NA)
+
+  testthat::expect_error({
+    m = ANN_lm$new(data = data, epochs = 1L, architecture = 1L)
+    m$build_lm()
+    m$compile()
+    m$train()
+    m$reset_all()
+    m$train()
+  })
+
+  testthat::expect_error({
+    m = ANN_lm$new(data = data, epochs = 1L, architecture = 1L)
+    m$build_lm()
+    m$compile()
+    m$train()
+    m$reset_all()
+    m$build_lm()
+    m$compile()
+    m$train()
+  }, NA)
 
 })
 
