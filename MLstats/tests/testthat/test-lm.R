@@ -20,13 +20,13 @@ testthat::test_that("lm functionality",{
   testthat::expect_error(lmML(y~., data = data, parameter = list(epochs = "hi"), method = "ann"))
 
   skip_if_no_tensorflow()
-  testthat::expect_error(lmML(y~., data = data, parameter = list(epochs = 1L, architecture = 1L), method = "ann"), NA)
-  testthat::expect_error({
+  testthat::expect_error(suppressWarnings(lmML(y~., data = data, parameter = list(epochs = 1L, architecture = 1L), method = "ann")), NA)
+  testthat::expect_error(suppressWarnings({
     fit = lmML(y~., data = data, parameter = list(epochs = 1L, architecture = 1L), method = "ann")
     p = predict(fit,data)
-    }, NA)
-  testthat::expect_error({
+    }), NA)
+  testthat::expect_error(suppressWarnings({
     fit = lmML(y~., data = data, parameter = list(epochs = 1L, architecture = 1L), method = "ann")
     p = predict(fit,data)
-  }, NA)
+  }), NA)
 })
