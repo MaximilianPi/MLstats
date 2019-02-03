@@ -10,10 +10,13 @@
 
 
 
-# x = matrix(runif(1000), nrow = 100, ncol = 10)
-# w = runif(10,-1,1)
-# y = x %*% w + 2 + rnorm(100,0,0.5)
-# data = data.frame(x, y=y)
+x = matrix(runif(1000), nrow = 100, ncol = 10)
+w = runif(10,-1,1)
+y = x %*% w + 2 + rnorm(100,0,0.5)
+data = data.frame(x, y=y)
+parameter = NULL
+formula = y~.
+cv = NULL
 
 lmML = function(formula, data = NULL, subset, na.action, method = "ann", scale, parameter = NULL, cv = NULL){
 
@@ -32,9 +35,9 @@ lmML = function(formula, data = NULL, subset, na.action, method = "ann", scale, 
 
   model = create_model_object(method, parameter)
 
-  model_fit = fit_model(model, cv, data_prepared)
+  model_fit = model_fit(model, cv, data_prepared)
 
-  importance = get_importance(model_fit)
+  #importance = get_importance(model_fit)
 
 }
 
@@ -65,15 +68,35 @@ get_default_parameter = function(method = "ann") {
     out$architecture = c(20L, 20L, 20L)
     out$lr = 0.001
     out$regularization = "batch_normalization"
-    out$activation = "relu"
+    out$activation_function = "relu"
     out$batch = 25L
     out$epochs = 50L
+    out$learning_rate = 0.001
+    out$bias = TRUE
   }
   return(out)
 }
 
 
+#' Model predict function for the different models
+#'
+#' @author Maximilian Pichler
+#' @param model model type
+#' @param data predict for data
+#' @export
+predict = function(model, data){
+  UseMethod("predict", model)
+}
 
+#' Model predict function for lm_ann
+#'
+#' @author Maximilian Pichler
+#' @param model model type
+#' @param data predict for data
+#' @export
+predict.lm_ann = function(model, data){
+  return(model$lm$predict(data))
+}
 
 #' Model fit function for the different models
 #'
@@ -95,61 +118,21 @@ model_fit = function(model, cv, data){
 #' @export
 model_fit.lm_ann = function(model, cv, data){
 
-  .error = tryCatch({
-    require(keras)
-    require(tensorflow)
-    tf_probability = reticulate::import("tensorflow_probability")
-    dist = tf_probability$distributions
-  }, error = function(err) return(err))
-  if(inherits(.error, "error")) stop(error)
+  parameter = model$parameter
 
-  model = keras_model_sequential()
+  model$lm = ANN_lm$new(architecture = parameter$architecture,
+                        activation_function = parameter$activation_function,
+                        bias = parameter$bias,
+                        regularization = parameter$regularization,
+                        batch_size = parameter$batch,
+                        epochs = parameter$epochs,
+                        learning_rate = parameter$learning_rate,
+                        data = data)
 
-  build = build_base_ann(parameter, input_dim = , output_dim = 1L, output_activation = "linear")
-
-  .null = build(model)
-
-  # hack to add an additional variable to the keras trainable weights
-
-  model$layers[[length(model$layers)]]$add_weight(name = 'sigma',
-                                                  shape = list(),
-                                                  initializer = initializer_constant(0.5),
-                                                  trainable = TRUE)
-
-  eps = tf$constant(.Machine$double.eps)
-
-  k = backend()
-
-  # likelihood normal distribution
-  normal_likelihood = function(y_true, y_pred){
-
-    sigma = tf$get_default_graph()$get_tensor_by_name("sigma:0")
-
-    ll = dist$Normal(y_pred, scale = sigma+eps)$log_prob(y_true)
-
-    return(k_mean(-ll))
-  }
-
-  model %>%
-    compile(
-      loss = normal_likelihood,
-      optimizer = optimizer_rmsprop(lr = parameter$lr)
-    )
-
-  fit_history =
-    model %>%
-      fit(
-        x = data$x,
-        y = matrix(data$y, ncol = 1L, byrow = T),
-        batch_size = parameter$batch,
-        epochs = parameter$epoch
-      )
-
-  ### Prepare output and serilization
-
-  model$set_weights
-
-  sigma = k_get_value(tf$get_default_graph()$get_tensor_by_name("sigma:0"))
+  model$lm$build_lm()
+  model$lm$compile()
+  model$lm$train()
+  return(model)
 
 }
 

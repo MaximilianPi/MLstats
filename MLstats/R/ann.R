@@ -34,6 +34,7 @@ ANN = R6::R6Class("ANN",
    model = NULL,
    data = NULL,
    fit_history = NULL,
+   k = NULL,
    initialize = function(architecture = c(10,10),
                          activation_function = "relu",
                          bias = TRUE,
@@ -43,6 +44,8 @@ ANN = R6::R6Class("ANN",
                          epochs = 100L,
                          learning_rate = 0.001,
                          data = NULL){
+     self$k = keras::backend()
+     self$reset_all()
 
      if(length(architecture) <= 0) stop("For linear regression, switch to lm()",call. = FALSE)
      if(!is.numeric(architecture)) stop("Numerical vector for architecture is needed", call. = FALSE)
@@ -114,10 +117,11 @@ ANN = R6::R6Class("ANN",
 
    train = function(){
      fit_history = keras::fit(self$model, x = self$data$x, y = self$data$y, epochs = private$epochs, batch_size = private$batch_size, shuffle = TRUE)
-     self$fit_history = c(self$fit_history, fit_history)
+     self$fit_history = c(self$fit_history, fit_history$metrics$loss)
    },
 
    predict = function(newdata = NULL){
+     require(keras)
      if(is.null(newdata)) newdata = self$data$x
      predict(self$model, newdata)
    },
@@ -127,16 +131,14 @@ ANN = R6::R6Class("ANN",
    },
 
    reset_fit = function(){
-     k = keras::backend()
-     k_clear_session()
+     self$k$clear_session()
      self$model = keras::keras_model_sequential()
      self$build()
      self$compile()
    },
 
    reset_all = function(){
-     k = keras::backend()
-     k_clear_session()
+     self$k$clear_session()
      self$model = keras::keras_model_sequential()
    }
 
@@ -153,23 +155,7 @@ ANN = R6::R6Class("ANN",
    learning_rate = NULL,
    output_activation = NULL,
    built = NULL
- ))
-
-
-
-# x = matrix(100, nrow = 10, ncol = 1L)
-# y = x*3
-#
-# data = list(x = matrix(x, ncol = 1, byrow = TRUE), y = matrix(y, ncol = 1, byrow = TRUE))
-#
-# m = ANN$new(data = data)
-#
-# m$build()
-# m$compile()
-# m$train()
-# m$model
-#
-# m$reset_fit()
+))
 
 
 
@@ -211,6 +197,7 @@ ANN_lm = R6::R6Class("ANN_lm",
     eps = NULL,
     tf = NULL,
     dist = NULL,
+    sigma = NULL,
 
     initialize = function(...){
       super$initialize(...)
@@ -221,32 +208,44 @@ ANN_lm = R6::R6Class("ANN_lm",
 
     build_lm = function(){
       if(self$build()){
-        self$model$layers[[length(self$model$layers)]]$add_weight(name = 'sigma',
+        suppressMessages({self$model$layers[[length(self$model$layers)]]$add_weight(name = 'sigma',
                                                                   shape = list(),
                                                                   initializer = initializer_constant(0.5),
                                                                   trainable = TRUE)
+        })
       }
     },
 
     compile = function(){
 
-      k = keras::backend()
 
       normal_likelihood = function(y_true, y_pred){
         sigma = self$tf$get_default_graph()$get_tensor_by_name("sigma:0")
         ll = self$dist$Normal(y_pred, scale = sigma+self$eps)$log_prob(y_true)
-        return(k_mean(-ll))
+        return(self$k$mean(-ll))
       }
 
       keras::compile(self$model, loss = normal_likelihood, optimizer = keras::optimizer_rmsprop(lr = private$learning_rate))
+    },
+
+    train = function(){
+      super$train()
+
+      self$update_sigma()
+    },
+
+    update_sigma = function() {
+      self$sigma = self$k$get_value(self$tf$get_default_graph()$get_tensor_by_name("sigma:0"))
     }
-  ))
 
-m = ANN_lm$new(data = data)
 
-m$build_lm()
-m$compile()
-m$train()
-m$model
+))
 
-m$reset_all()
+# m = ANN_lm$new(data = data)
+#
+# m$build_lm()
+# m$compile()
+# m$train()
+# m$model
+#
+# m$reset_all()
