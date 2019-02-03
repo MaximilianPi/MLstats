@@ -3,8 +3,8 @@
 Deep learning and machine learning algorithms with specific likelihoods
 
 
- [![Build Status](https://travis-ci.org/MaximilianPi/MLstats.svg?branch=master](https://travis-ci.org/MaximilianPi/MLstats)
- 
+[![Build Status](https://travis-ci.org/MaximilianPi/MLstats.svg?branch=master)](https://travis-ci.org/MaximilianPi/MLstats) 
+
 install development version:
  ```{r}
 devtools::install_github(repo = "MaximilianPi/MLstats",subdir = "MLstats", build_vignettes = T)
