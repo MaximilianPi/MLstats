@@ -1,0 +1,11 @@
+before_install:
+ - cd BayesianTools
+
+language: r
+r:
+- oldrel
+- release
+- devel
+
+  
+cache: packages
