@@ -10,7 +10,10 @@
 #'@param parameter list of parameter for method
 #'@param cv cross validation strategy
 #'
-#'@importFrom stats model.frame model.matrix dnorm
+#'@importFrom stats model.frame
+#'@importFrom stats model.matrix
+#'@importFrom stats model.response
+#'@importFrom stats dnorm
 #'@export
 
 # TO DO: implement cv + subset + na.action
