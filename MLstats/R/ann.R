@@ -12,7 +12,7 @@
 #' @section Arguments:
 #' \describe{
 #' \item{model: }{(any)\cr keras model}
-#' \item{data: }{(data.frame)\cr The data }
+#' \item{data: }{(list)\cr List of data with x and y as matrices }
 #' \item{data: }{(list)\cr fit history list}
 #' \item{build: }{(function)\cr build function}
 #'
@@ -44,36 +44,63 @@ ANN = R6::R6Class("ANN",
                          learning_rate = 0.001,
                          data = NULL){
 
-     self$architecture = architecture
-     self$activation_function = activation_function
-     self$bias = bias
-     self$regularization = regularization
-     self$dropout_rate = dropout_rate
-     self$batch_size = batch_size
-     self$epochs = epochs
-     self$learning_rate = learning_rate
+     if(length(architecture) <= 0) stop("For linear regression, switch to lm()",call. = FALSE)
+     if(!is.numeric(architecture)) stop("Numerical vector for architecture is needed", call. = FALSE)
+     if(any(sapply(architecture, function(x) x == 0))) stop("Nodes with 0 units not allowed", call. = FALSE)
+     if(!activation_function %in% c("relu", "tanh", "elu")) stop("activation_function must be one of (relu, tanh, elu)", call. = FALSE)
+     if(dropout_rate > 1 || dropout_rate < 0) stop("dropout_rate must be in [0,1]", call. = FALSE)
+     if(batch_size > nrow(data$x)) {
+       batch_size = nrow(data$x)
+       warning("Setting batch_size to nrow(data) because batch size cannot be larger than data", call. = FALSE)
+     }
+     if(epochs <=0 || !is.numeric(epochs)) stop("Epochs must be > 0 and numeric", call. = FALSE)
+     if(learning_rate <= 0 || !is.numeric(learning_rate)) stop("learning_rate must be > 0 and numeric", call. = FALSE)
+     if(is.null(data)) warning("Data must contain data or model cannot be built and trained", call. = FALSE)
+
+     private$architecture = architecture
+     private$activation_function = activation_function
+     private$bias = bias
+     private$regularization = regularization
+     private$dropout_rate = dropout_rate
+     private$batch_size = batch_size
+     private$epochs = epochs
+     private$learning_rate = learning_rate
+
+     if(is.null(dim(data$y))) {
+       warning("Y is a vector, changing to matrix with ncol == 1",call. = FALSE)
+       data$y = matrix(data$y, ncol = 1, byrow = TRUE)
+     }
+
      self$data = data
      self$model = keras::keras_model_sequential()
+     private$built = FALSE
 
    },
    build = function(){
+     if(!private$built){
+       regularization =
+         if(private$regularization=="batch_normalization") {
+           function(model) return(keras::layer_batch_normalization(model))
+         } else {
+           function(model) return(keras::layer_dropout(model, rate = self$dropout_rate))
+         }
 
-     regularization =
-       if(self$regularization=="batch_normalization") {
-         function(model) return(keras::layer_batch_normalization(model))
-       } else {
-         function(model) return(keras::layer_dropout(model, rate = self$dropout_rate))
+       for(i in 1:length(private$architecture)){
+         if(i == 1) {
+           keras::layer_dense(self$model, input_shape = dim(self$data$x[2]),
+                              activation = private$activation_function, units = private$architecture[i])
+         }else {
+           keras::layer_dense(self$model,
+                              activation = private$activation_function, units = private$architecture[i])
+         }
+         regularization(self$model)
        }
 
-     for(i in 1:length(self$architecture)){
-       if(i == 1) {
-         keras::layer_dense(self$model, input_shape = dim(self$data$x[2]),
-                            activation = self$activation_function, units = architecture[i])
-       }else {
-         keras::layer_dense(self$model,
-                            activation = self$activation_function, units = architecture[i])
-       }
-       regularization(self$model)
+       private$built = TRUE
+       return(TRUE)
+     } else {
+       warning("already built, reset first", call. = FALSE)
+       return(FALSE)
      }
    },
 
@@ -82,17 +109,38 @@ ANN = R6::R6Class("ANN",
    },
 
    compile = function(){
-     keras::compile(self$model, loss = keras::loss_mean_squared_error, optimizer = keras::optimizer_rmsprop(lr = self$learning_rate))
+     keras::compile(self$model, loss = keras::loss_mean_squared_error, optimizer = keras::optimizer_rmsprop(lr = private$learning_rate))
    },
 
    train = function(){
-     fit_history = keras::fit(self$model, x = self$data$x, y = self$data$y, epochs = self$epochs, batch_size = self$batch_size, shuffle = TRUE)
+     fit_history = keras::fit(self$model, x = self$data$x, y = self$data$y, epochs = private$epochs, batch_size = private$batch_size, shuffle = TRUE)
+     self$fit_history = c(self$fit_history, fit_history)
    },
 
    predict = function(newdata = NULL){
      if(is.null(newdata)) newdata = self$data$x
      predict(self$model, newdata)
+   },
+
+   serialize = function(){
+     keras::serialize_model(model, include_optimizer = TRUE)
+   },
+
+   reset_fit = function(){
+     k = keras::backend()
+     k_clear_session()
+     self$model = keras::keras_model_sequential()
+     self$build()
+     self$compile()
+   },
+
+   reset_all = function(){
+     k = keras::backend()
+     k_clear_session()
+     self$model = keras::keras_model_sequential()
    }
+
+
  ),
  private = list(
    architecture = NULL,
@@ -103,65 +151,102 @@ ANN = R6::R6Class("ANN",
    batch_size = NULL,
    epochs = NULL,
    learning_rate = NULL,
-   output_activation = NULL
-
+   output_activation = NULL,
+   built = NULL
  ))
 
 
 
+# x = matrix(100, nrow = 10, ncol = 1L)
+# y = x*3
+#
+# data = list(x = matrix(x, ncol = 1, byrow = TRUE), y = matrix(y, ncol = 1, byrow = TRUE))
+#
+# m = ANN$new(data = data)
+#
+# m$build()
+# m$compile()
+# m$train()
+# m$model
+#
+# m$reset_fit()
 
 
 
-
-
-
-
-
-
-#' Helper function for ANN build
+#' Base ANN_lm object
+#'
+#' \code{ANN_lm} object holds an artifical neural network model with a normal distribution likelihood
+#'
+#' @format \code{\link{R6Class}} object.
+#' @name ANN_lm
+#' @section Usage:
+#' \preformatted{
+#' model = ANN$new()
+#' }
+#'
+#' @section Arguments:
+#' \describe{
+#' \item{model: }{(any)\cr keras model}
+#' \item{data: }{(list)\cr List of data with x and y as matrices }
+#' \item{data: }{(list)\cr fit history list}
+#' \item{build: }{(function)\cr build function}
+#'
+#'
+#' }
+#'
+#' @section Details:
+#' comming soon
+#'
+#'
 #'
 #' @author Maximilian Pichler
-#' @param parameter parameterlist
-#' @param input_dim input dimension
-#' @param output_dim output dimension for last layer
-#' @param output_activation activation function in last layer
+#' @export
+NULL
 
-build_base_ann = function( parameter, input_dim, output_dim, output_activation = "linear"){
+#'@export
+ANN_lm = R6::R6Class("ANN_lm",
+  inherit = ANN,
+  public = list(
 
-  require(keras, quietly = TRUE)
+    eps = NULL,
+    tf = NULL,
+    dist = NULL,
 
-  return(function(model){
+    initialize = function(...){
+      super$initialize(...)
+      self$tf = reticulate::import("tensorflow")
+      self$dist = reticulate::import("tensorflow_probability")$distributions
+      self$eps = self$tf$constant(.Machine$double.eps)
+    },
 
-    layer = length(parameter$architecture)
+    build_lm = function(){
+      if(self$build()){
+        self$model$layers[[length(self$model$layers)]]$add_weight(name = 'sigma',
+                                                                  shape = list(),
+                                                                  initializer = initializer_constant(0.5),
+                                                                  trainable = TRUE)
+      }
+    },
 
-    architecture = parameter$architecture
+    compile = function(){
 
-    activation = parameter$activation
+      k = keras::backend()
 
-    regularization =
-      if(parameter$regularization=="batch_normalization") {
-        function(model) return(layer_batch_normalization(model))
-      } else {
-        function(model) return(layer_dropout(model, rate = parameter$dropout_rate))
+      normal_likelihood = function(y_true, y_pred){
+        sigma = self$tf$get_default_graph()$get_tensor_by_name("sigma:0")
+        ll = self$dist$Normal(y_pred, scale = sigma+self$eps)$log_prob(y_true)
+        return(k_mean(-ll))
       }
 
-    for(i in 1:layer){
-      if(i == 1) {
-        model %>% layer_dense(input_shape = input_dim, activation = activation, units = architecture[i])
-      }else {
-        model %>% layer_dense( activation = "relu", units = architecture[i])
-      }
-      model %>% regularization
+      keras::compile(self$model, loss = normal_likelihood, optimizer = keras::optimizer_rmsprop(lr = private$learning_rate))
     }
+  ))
 
-    model %>%
-      layer_dense(units = output_dim, activation = output_activation)
+m = ANN_lm$new(data = data)
 
-    return(model)
-  })
+m$build_lm()
+m$compile()
+m$train()
+m$model
 
-}
-
-
-
-
+m$reset_all()
