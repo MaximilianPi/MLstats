@@ -141,6 +141,9 @@ predict.lm_ann = function(model, data){
 #' @param model model type
 #' @param data predict for data
 #' @importFrom stats predict
+#' @importFrom stats model.response
+#' @importFrom stats model.matrix
+#' @importFrom stats model.frame
 #' @export
 predict.MLstats.lm_ann = function(model, data){
 
