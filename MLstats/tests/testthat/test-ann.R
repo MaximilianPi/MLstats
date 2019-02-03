@@ -13,6 +13,7 @@ data = list(x=x, y=y)
 # cv = NULL
 # method = "ann"
 testthat::test_that("ann parameters", {
+  skip_if_no_tensorflow()
   testthat::expect_error({ANN$new()})
   testthat::expect_error({ANN$new(data = data, batch_size = 20)}, NA)
   testthat::expect_error({ANN$new(data = data, epochs = 0)})
