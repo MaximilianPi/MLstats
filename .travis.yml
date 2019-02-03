@@ -1,5 +1,5 @@
 before_install:
- - cd BayesianTools
+ - cd MLstats
 
 language: r
 r:
