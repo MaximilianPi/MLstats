@@ -7,5 +7,5 @@ Deep learning and machine learning algorithms with specific likelihoods
  
 install development version:
  ```{r}
-devtools::install_github(repo = "MaximilianPi/MLstats/MLstats", build_vignettes = T)
+devtools::install_github(repo = "MaximilianPi/MLstats",subdir = "MLstats", build_vignettes = T)
 ```

@@ -4,13 +4,18 @@
 #'@param  formula an object of class formula
 #'@param data data frame
 #'@param subset indicies on which model is fitted
+#'@param na.action how to handle nas
 #'@param method support methods are random forest, deep neural networks
+#'@param scale how to handle unscales values
+#'@param parameter list of parameter for method
+#'@param cv cross validation strategy
 #'
+#'@importFrom stats model.frame model.matrix dnorm
 #'@export
 
 # TO DO: implement cv + subset + na.action
 
-lmML = function(formula, data = NULL, subset = NULL, na.action, method = "ann", scale = FALSE, parameter = NULL, cv = NULL){
+lmML = function(formula, data = NULL, subset = NULL, na.action = NULL, method = "ann", scale = FALSE, parameter = NULL, cv = NULL){
 
   if(!inherits(formula, "formula")) stop("method is only for formula objects")
   if(method != "ann") stop("At the moment, only method = 'ann' is supported")
@@ -119,6 +124,7 @@ get_default_parameter = function(method = "ann") {
 #' @author Maximilian Pichler
 #' @param model model type
 #' @param data predict for data
+#' @importFrom stats predict
 #' @export
 predict.lm_ann = function(model, data){
   return(model$lm$predict(data))
@@ -131,6 +137,7 @@ predict.lm_ann = function(model, data){
 #' @author Maximilian Pichler
 #' @param model model type
 #' @param data predict for data
+#' @importFrom stats predict
 #' @export
 predict.MLstats.lm_ann = function(model, data){
 
@@ -148,6 +155,7 @@ predict.MLstats.lm_ann = function(model, data){
 #' @author Maximilian Pichler
 #' @param model model type
 #' @param cv type
+#' @param data data for fitting
 #' @export
 model_fit = function(model, cv, data){
   UseMethod("model_fit", model)
@@ -187,6 +195,7 @@ model_fit.lm_ann = function(model, cv, data){
 #' @author Maximilian Pichler
 #' @param model model type
 #' @param cv cv type
+#' @param data data ...
 #' @export
 model_fit.lm_rf = function(model, cv, data){
 
