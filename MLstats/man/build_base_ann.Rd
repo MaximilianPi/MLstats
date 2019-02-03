@@ -4,8 +4,8 @@
 \alias{build_base_ann}
 \title{Helper function for ANN build}
 \usage{
-build_base_ann(parameter, input_dim = dim(data$x),
-  output_dim = dim(data$y), output_activation = "linear")
+build_base_ann(parameter, input_dim, output_dim,
+  output_activation = "linear")
 }
 \arguments{
 \item{parameter}{parameterlist}
